@@ -41,20 +41,15 @@ def classify_email():
             file = request.files['file']
             if file and file.filename != '':
                 email_text = read_uploaded_file(file)
-                print(f"📁 Arquivo processado: {file.filename}")
         
         elif request.is_json and request.json and 'email' in request.json:
             email_text = request.json.get('email', '')
-            print("📝 Texto recebido via JSON")
         
         elif request.form and 'email' in request.form:
             email_text = request.form.get('email', '')
-            print("📝 Texto recebido via form-data")
         
         if not email_text or not email_text.strip():
             return jsonify({'error': 'Nenhum conteúdo fornecido', 'status': 'error'}), 400
-        
-        print(f"📧 Conteúdo processado ({len(email_text)} caracteres): {email_text[:100]}...")
         
         category = classify_with_hf(email_text)
         
@@ -68,12 +63,9 @@ def classify_email():
         })
     
     except Exception as e:
-        print(f"Erro: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 def read_uploaded_file(file):
-    """Lê o conteúdo de arquivos TXT ou PDF"""
-    
     if isinstance(file, str):
         return file
     
@@ -84,7 +76,7 @@ def read_uploaded_file(file):
         return file_content
     
     elif filename.endswith('.pdf'):
-        file.seek(0)  
+        file.seek(0)
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
         for page in pdf_reader.pages:
@@ -97,8 +89,6 @@ def read_uploaded_file(file):
         raise ValueError("Formato não suportado. Use .txt ou .pdf")
 
 def classify_with_hf(email_text):
-    """Classificação usando Hugging Face API"""
-    
     if len(email_text.split()) < 2:
         return classify_simple(email_text)
     
@@ -108,35 +98,28 @@ def classify_with_hf(email_text):
         
         if response.status_code == 200:
             result = response.json()
-            print("Resposta HF:", result)
             
             if isinstance(result, list) and len(result) > 0:
                 sentiment_data = result[0]
                 best_sentiment = max(sentiment_data, key=lambda x: x['score'])
                 label = best_sentiment['label'].lower()
                 
-                if label in ['positive', 'pos', 'lab_1']:
-                    return "Improdutivo"
-                elif label in ['negative', 'neg', 'neutral', 'lab_0']:
-                    return "Produtivo"
+                if label in ['negative', 'neg', 'lab_0']:
+                    return "Importante"
+                elif label in ['positive', 'pos', 'neutral', 'lab_1']:
+                    return "Não Importante"
         
         return classify_simple(email_text)
         
-    except requests.exceptions.Timeout:
-        print("Timeout na API HF")
-        return classify_simple(email_text)
-    except Exception as e:
-        print(f"Erro na classificação HF: {e}")
+    except Exception:
         return classify_simple(email_text)
 
 def generate_response_with_hf(email_text, category):
-    """Gera resposta usando Hugging Face"""
-    
     try:
-        if category == "Produtivo":
-            prompt = f"Responda este email profissionalmente: '{email_text}'. Resposta:"
+        if category == "Importante":
+            prompt = f"Responda este email importante de forma profissional e direta: '{email_text}'. Resposta:"
         else:
-            prompt = f"Responda este email cordialmente: '{email_text}'. Resposta:"
+            prompt = f"Responda este email não importante de forma breve e cordial: '{email_text}'. Resposta:"
         
         payload = {
             "inputs": prompt,
@@ -153,31 +136,24 @@ def generate_response_with_hf(email_text, category):
         
         return generate_fallback_response(category)
         
-    except Exception as e:
-        print(f"Erro na geração: {e}")
+    except Exception:
         return generate_fallback_response(category)
 
 def classify_simple(email_text):
-    """Classificação simples por palavras-chave"""
-    productive_keywords = ['problema', 'ajuda', 'suporte', 'erro', 'urgente', 'ação', 'corrigir', 'quebrado']
-    unproductive_keywords = ['obrigado', 'parabéns', 'agradeço', 'feliz', 'bom trabalho', 'excelente']
+    important_keywords = ['problema', 'erro', 'urgente', 'quebrado', 'suporte', 'ajuda', 'contrato', 'pagamento', 'bug', 'reclamação']
+    unimportant_keywords = ['obrigado', 'parabéns', 'agradeço', 'feliz', 'bom trabalho', 'excelente', 'demo', 'promoção', 'newsletter']
     
     email_lower = email_text.lower()
-    productive_count = sum(1 for word in productive_keywords if word in email_lower)
-    unproductive_count = sum(1 for word in unproductive_keywords if word in email_lower)
+    important_count = sum(1 for word in important_keywords if word in email_lower)
+    unimportant_count = sum(1 for word in unimportant_keywords if word in email_lower)
     
-    return "Produtivo" if productive_count >= unproductive_count else "Improdutivo"
+    return "Importante" if important_count > unimportant_count else "Não Importante"
 
 def generate_fallback_response(category):
-    """Respostas de fallback"""
-    if category == "Produtivo":
-        return "Agradeço seu email. Analisarei sua solicitação e retornarei em breve com uma solução."
+    if category == "Importante":
+        return "Prezado(a) cliente,\n\nAgradecemos seu contato. Esta é uma questão importante e nossa equipe dará prioridade ao seu atendimento. Retornaremos em até 24 horas.\n\nAtenciosamente,\nEquipe de Suporte"
     else:
-        return "Obrigado pelo seu email! Agradeço o contato e fico feliz em ajudar."
+        return "Prezado(a) cliente,\n\nObrigado pelo seu email! Agradecemos o contato.\n\nAtenciosamente,\nEquipe de Atendimento"
 
 if __name__ == '__main__':
-    print("Servidor iniciando...")
-    print("Endpoints:")
-    print("   - GET  http://localhost:5000/health")
-    print("   - POST http://localhost:5000/classify")
     app.run(debug=True, host='0.0.0.0', port=5000)
