@@ -8,12 +8,11 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 CORS(app)  
 
-# Configuração Hugging Face
-HF_API_KEY = "hf_token" 
+HF_API_KEY = os.environ.get('HUGGINGFACE_TOKEN')
 HF_CLASSIFY_URL = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
 HF_CHAT_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
 
-headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+headers = {"Authorization": f"Bearer {HF_API_KEY}"} if HF_API_KEY else {}
 
 @app.after_request
 def after_request(response):
@@ -38,19 +37,16 @@ def classify_email():
     try:
         email_text = ""
         
-        # Verificar se é upload de arquivo
         if 'file' in request.files:
             file = request.files['file']
             if file and file.filename != '':
                 email_text = read_uploaded_file(file)
                 print(f"📁 Arquivo processado: {file.filename}")
         
-        # Verificar se é JSON com texto
         elif request.is_json and request.json and 'email' in request.json:
             email_text = request.json.get('email', '')
             print("📝 Texto recebido via JSON")
         
-        # Verificar se é form-data com texto
         elif request.form and 'email' in request.form:
             email_text = request.form.get('email', '')
             print("📝 Texto recebido via form-data")
@@ -60,10 +56,8 @@ def classify_email():
         
         print(f"📧 Conteúdo processado ({len(email_text)} caracteres): {email_text[:100]}...")
         
-        # Classificação
         category = classify_with_hf(email_text)
         
-        # Geração de resposta
         response_suggestion = generate_response_with_hf(email_text, category)
         
         return jsonify({
@@ -86,13 +80,11 @@ def read_uploaded_file(file):
     filename = file.filename.lower()
     
     if filename.endswith('.txt'):
-        # Ler arquivo TXT
         file_content = file.read().decode('utf-8')
         return file_content
     
     elif filename.endswith('.pdf'):
-        # Ler arquivo PDF
-        file.seek(0)  # Reset file pointer
+        file.seek(0)  
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
         for page in pdf_reader.pages:
@@ -107,7 +99,6 @@ def read_uploaded_file(file):
 def classify_with_hf(email_text):
     """Classificação usando Hugging Face API"""
     
-    # Fallback para textos muito curtos
     if len(email_text.split()) < 2:
         return classify_simple(email_text)
     

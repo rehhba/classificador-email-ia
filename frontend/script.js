@@ -64,7 +64,7 @@ async function classifyEmail() {
         let response;
         if (currentOption === 'text') {
             // Enviar como JSON
-            response = await fetch('http://localhost:5000/classify', {
+            response = await fetch('http://https://classificador-email-backend.onrender.com/classify:5000/classify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: emailText })
@@ -74,7 +74,7 @@ async function classifyEmail() {
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             
-            response = await fetch('http://localhost:5000/classify', {
+            response = await fetch('httphttps://classificador-email-backend.onrender.com/classifylocalhost:5000/classify', {
                 method: 'POST',
                 body: formData
             });
