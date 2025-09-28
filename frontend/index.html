@@ -458,31 +458,53 @@
                 btn.disabled = true;
                 btnText.innerHTML = '<div class="loading"></div>Analisando...';
 
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                const mockResults = {
-                    category: "Dúvida Técnica",
-                    response: `Prezado(a) cliente,
-
-Agradecemos pelo seu contato. Nossa equipe técnica analisará sua dúvida e retornará com uma solução dentro de 24 horas úteis.
-
-Para agilizar o atendimento, pedimos que nos forneça:
-- Número do seu contrato
-- Descrição detalhada do problema
-- Screenshots (se aplicável)
-
-Atenciosamente,
-Equipe de Suporte Técnico`
-                };
-
-                document.getElementById('categoryResult').textContent = mockResults.category;
-                document.getElementById('responseSuggestion').textContent = mockResults.response;
-                resultCard.classList.remove('hidden');
-
-                resultCard.scrollIntoView({ behavior: 'smooth' });
-
+                const activeTab = document.querySelector('.tab-content.active').id;
+                let formData = new FormData();
+        
+                if (activeTab === 'text-tab') {
+                    const emailText = document.getElementById('emailText').value.trim();
+                    if (!emailText) {
+                        alert('Por favor, insira o texto do email');
+                        return;
+                    }
+                    formData.append('email', emailText);
+                } else {
+                    const fileInput = document.getElementById('fileInput');
+                    if (!fileInput.files.length) {
+                        alert('Por favor, selecione um arquivo');
+                        return;
+                    }
+                    const file = fileInput.files[0];
+                    if (!file.name.match(/\.(txt|pdf)$/i)) {
+                        alert('Por favor, selecione um arquivo .txt ou .pdf');
+                        return;
+                    }
+                    formData.append('file', file);
+                }
+        
+                const response = await fetch('https://classificador-email-backend.onrender.com/classify', {
+                    method: 'POST',
+                    body: formData
+                });
+        
+                if (!response.ok) {
+            throw new Error(`Erro: ${response.status}`);
+                }
+        
+                const result = await response.json();
+        
+                if (result.status === 'success') {
+                    document.getElementById('categoryResult').textContent = result.category;
+                    document.getElementById('responseSuggestion').textContent = result.response;
+                    resultCard.classList.remove('hidden');
+            
+                    resultCard.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    throw new Error(result.error);
+                }
+        
             } catch (error) {
-                alert('Erro na análise: ' + error.message);
+                alert('Erro ao processar: ' + error.message);
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'Analisar Email';
