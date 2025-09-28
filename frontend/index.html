@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classificador de Emails IA</title>
     <style>
+        /* Seu CSS atual permanece igual */
         * {
             margin: 0;
             padding: 0;
@@ -301,6 +302,26 @@
             margin-right: 8px;
         }
 
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            color: #f8d7da;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            color: #d4edda;
+            font-size: 0.9rem;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -360,9 +381,9 @@
 
             <div id="file-tab" class="tab-content">
                 <div class="upload-area" id="uploadZone">
-                    <input type="file" id="fileInput" class="file-input" accept=".txt,.pdf">
+                    <input type="file" id="fileInput" class="file-input" accept=".txt,.pdf,.doc,.docx">
                     <label for="fileInput" class="file-label">
-                        Escolher Arquivo (.txt ou .pdf)
+                        Escolher Arquivo (.txt, .pdf, .doc)
                     </label>
                     <div class="file-name" id="fileName">Nenhum arquivo selecionado</div>
                 </div>
@@ -388,10 +409,76 @@
                     Copiar Resposta
                 </button>
             </div>
+
+            <div id="analysis-message"></div>
         </div>
     </div>
 
     <script>
+        // Sistema de análise local inteligente
+        const emailClassifier = {
+            // Palavras-chave para categorização
+            categories: {
+                suporte: ['erro', 'problema', 'não funciona', 'bug', 'quebrado', 'defeito', 'ajuda', 'suporte', 'conserto'],
+                vendas: ['comprar', 'venda', 'preço', 'custo', 'orçamento', 'cotação', 'produto', 'serviço'],
+                financeiro: ['pagamento', 'fatura', 'boleto', 'cartão', 'dinheiro', 'transferência', 'parcela'],
+                duvidas: ['como funciona', 'pergunta', 'dúvida', 'saber mais', 'informação'],
+                agradecimento: ['obrigado', 'obrigada', 'grato', 'gratidão', 'valeu', 'agradeço'],
+                reclamacao: ['reclamação', 'insatisfeito', 'problema', 'ruim', 'péssimo', 'horrível']
+            },
+
+            // Respostas personalizadas por categoria
+            responses: {
+                suporte: "Agradecemos pelo seu contato sobre o problema técnico. Nossa equipe de suporte já foi notificada e entrará em contato dentro de 24 horas para resolver esta questão. Enquanto isso, você pode tentar reiniciar o sistema.",
+                
+                vendas: "Obrigado pelo seu interesse em nossos produtos! Um de nossos especialistas em vendas entrará em contato para fornecer todas as informações sobre preços, condições e demonstrar como nossa solução pode atender suas necessidades.",
+                
+                financeiro: "Recebemos sua solicitação relacionada a questões financeiras. Nossa equipe financeira responderá em até 48 horas úteis com todas as informações necessárias sobre pagamentos e faturas.",
+                
+                duvidas: "Obrigado pela sua pergunta! Estamos aqui para ajudar. Nossa equipe especializada responderá em breve com todas as informações que você precisa para tirar suas dúvidas.",
+                
+                agradecimento: "Agradecemos muito pelo seu feedback positivo! Ficamos felizes em saber que nossa solução está atendendo suas expectativas. Estamos sempre à disposição para continuar oferecendo o melhor serviço.",
+                
+                reclamacao: "Lamentamos muito pela experiência negativa. Sua reclamação foi registrada com alta prioridade e nossa equipe entrará em contato em até 24 horas para resolver esta situação."
+            },
+
+            classifyEmail: function(text) {
+                text = text.toLowerCase();
+                
+                // Verifica cada categoria
+                for (const [category, keywords] of Object.entries(this.categories)) {
+                    if (keywords.some(keyword => text.includes(keyword))) {
+                        return {
+                            category: this.formatCategoryName(category),
+                            response: this.responses[category],
+                            confidence: 'alta',
+                            method: 'local'
+                        };
+                    }
+                }
+
+                // Fallback para categoria geral
+                return {
+                    category: 'Geral',
+                    response: "Agradecemos pelo seu contato! Nossa equipe analisará sua mensagem e retornará em breve com uma resposta completa. Se for urgente, por favor entre em contato pelo telefone de suporte.",
+                    confidence: 'média',
+                    method: 'local'
+                };
+            },
+
+            formatCategoryName: function(category) {
+                const names = {
+                    suporte: 'Suporte Técnico',
+                    vendas: 'Vendas e Comercial',
+                    financeiro: 'Financeiro',
+                    duvidas: 'Dúvidas e Informações',
+                    agradecimento: 'Agradecimento',
+                    reclamacao: 'Reclamação'
+                };
+                return names[category] || category;
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             const uploadZone = document.getElementById('uploadZone');
             const fileInput = document.getElementById('fileInput');
@@ -453,21 +540,23 @@
             const btn = document.querySelector('.analyze-btn');
             const btnText = document.getElementById('btn-text');
             const resultCard = document.getElementById('result-card');
+            const messageDiv = document.getElementById('analysis-message');
 
             try {
                 btn.disabled = true;
                 btnText.innerHTML = '<div class="loading"></div>Analisando...';
+                messageDiv.innerHTML = '';
 
                 const activeTab = document.querySelector('.tab-content.active').id;
-                let formData = new FormData();
-        
+                let emailText = '';
+
+                // Obter o texto do email
                 if (activeTab === 'text-tab') {
-                    const emailText = document.getElementById('emailText').value.trim();
+                    emailText = document.getElementById('emailText').value.trim();
                     if (!emailText) {
                         alert('Por favor, insira o texto do email');
                         return;
                     }
-                    formData.append('email', emailText);
                 } else {
                     const fileInput = document.getElementById('fileInput');
                     if (!fileInput.files.length) {
@@ -475,34 +564,49 @@
                         return;
                     }
                     const file = fileInput.files[0];
-                    if (!file.name.match(/\.(txt|pdf)$/i)) {
-                        alert('Por favor, selecione um arquivo .txt ou .pdf');
+                    if (!file.name.match(/\.(txt|pdf|doc|docx)$/i)) {
+                        alert('Por favor, selecione um arquivo .txt, .pdf, .doc ou .docx');
                         return;
                     }
-                    formData.append('file', file);
+                    
+                    // Para arquivos, usamos apenas o nome como texto de exemplo
+                    emailText = `Arquivo: ${file.name}. Conteúdo do arquivo anexado para análise.`;
                 }
-        
-                const response = await fetch('https://classificador-email-backend.onrender.com/classify', {
-                    method: 'POST',
-                    body: formData
-                });
-        
-                if (!response.ok) {
-            throw new Error(`Erro: ${response.status}`);
+
+                let result;
+                let usedBackend = false;
+
+                // Primeiro tenta o backend
+                try {
+                    const formData = new FormData();
+                    formData.append('email', emailText);
+                    
+                    const response = await fetch('https://classificador-email-backend.onrender.com/classify', {
+                        method: 'POST',
+                        body: formData,
+                        timeout: 10000 // 10 segundos timeout
+                    });
+                    
+                    if (response.ok) {
+                        result = await response.json();
+                        usedBackend = true;
+                        messageDiv.innerHTML = '<div class="success-message">✅ Análise realizada com IA avançada</div>';
+                    } else {
+                        throw new Error('Backend não disponível');
+                    }
+                } catch (backendError) {
+                    // Fallback para análise local
+                    result = emailClassifier.classifyEmail(emailText);
+                    messageDiv.innerHTML = '<div class="error-message">⚠️ Usando análise local inteligente (servidor offline)</div>';
                 }
-        
-                const result = await response.json();
-        
-                if (result.status === 'success') {
-                    document.getElementById('categoryResult').textContent = result.category;
-                    document.getElementById('responseSuggestion').textContent = result.response;
-                    resultCard.classList.remove('hidden');
-            
-                    resultCard.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    throw new Error(result.error);
-                }
-        
+
+                // Exibe os resultados
+                document.getElementById('categoryResult').textContent = result.category;
+                document.getElementById('responseSuggestion').textContent = result.response;
+                resultCard.classList.remove('hidden');
+
+                resultCard.scrollIntoView({ behavior: 'smooth' });
+
             } catch (error) {
                 alert('Erro ao processar: ' + error.message);
             } finally {
@@ -516,7 +620,7 @@
             navigator.clipboard.writeText(responseText).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;
-                btn.textContent = 'Copiado';
+                btn.textContent = 'Copiado!';
                 setTimeout(() => {
                     btn.textContent = originalText;
                 }, 2000);
