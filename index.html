@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classificador de Emails IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #b0b0b0;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .main-card {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: rgba(40, 40, 40, 0.6);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 14px 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #a0a0a0;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+        }
+
+        .tab-button.active {
+            background: #2d5af0;
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(45, 90, 240, 0.2);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 180px;
+            padding: 18px;
+            background: rgba(40, 40, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #2d5af0;
+            box-shadow: 0 0 0 3px rgba(45, 90, 240, 0.1);
+        }
+
+        .text-input::placeholder {
+            color: #666;
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 50px 35px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(40, 40, 40, 0.4);
+        }
+
+        .upload-area:hover {
+            border-color: #2d5af0;
+            background: rgba(40, 40, 40, 0.6);
+        }
+
+        .upload-area.dragover {
+            border-color: #2d5af0;
+            background: rgba(45, 90, 240, 0.05);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: #2d5af0;
+            color: #ffffff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .file-label:hover {
+            background: #3a65f5;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(45, 90, 240, 0.3);
+        }
+
+        .file-name {
+            margin-top: 16px;
+            color: #a0a0a0;
+            font-size: 0.85rem;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 18px;
+            background: #2d5af0;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .analyze-btn:hover {
+            background: #3a65f5;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(45, 90, 240, 0.3);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-card {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 35px;
+            margin-top: 25px;
+            animation: slideInUp 0.5s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .result-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(40, 40, 40, 0.6);
+            border-radius: 12px;
+            border-left: 4px solid #2d5af0;
+        }
+
+        .result-section h4 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #2d5af0;
+            font-weight: 600;
+        }
+
+        .response-text {
+            background: rgba(30, 30, 30, 0.8);
+            padding: 18px;
+            border-radius: 10px;
+            margin: 14px 0;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.95rem;
+        }
+
+        .copy-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #2d5af0;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 16px;
+            }
+
+            .header h1 {
+                font-size: 2.2rem;
+            }
+
+            .main-card {
+                padding: 25px;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            .upload-area {
+                padding: 35px 20px;
+            }
+
+            .file-label {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .text-input {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Classificador de Emails IA</h1>
+            <p>Analise automaticamente seus emails e obtenha respostas personalizadas</p>
+        </div>
+
+        <div class="main-card">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('text-tab')">
+                    Texto Direto
+                </button>
+                <button class="tab-button" onclick="showTab('file-tab')">
+                    Upload de Arquivo
+                </button>
+            </div>
+
+            <div id="text-tab" class="tab-content active">
+                <textarea class="text-input" id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
+            </div>
+
+            <div id="file-tab" class="tab-content">
+                <div class="upload-area" id="uploadZone">
+                    <input type="file" id="fileInput" class="file-input" accept=".txt,.pdf">
+                    <label for="fileInput" class="file-label">
+                        Escolher Arquivo (.txt ou .pdf)
+                    </label>
+                    <div class="file-name" id="fileName">Nenhum arquivo selecionado</div>
+                </div>
+            </div>
+
+            <button class="analyze-btn" onclick="analyzeEmail()">
+                <span id="btn-text">Analisar Email</span>
+            </button>
+        </div>
+
+        <div id="result-card" class="result-card hidden">
+            <h3>Resultado da Análise</h3>
+            
+            <div class="result-section">
+                <h4>Categoria Identificada</h4>
+                <div class="category-result" id="categoryResult"></div>
+            </div>
+
+            <div class="result-section">
+                <h4>Resposta Sugerida</h4>
+                <div class="response-text" id="responseSuggestion"></div>
+                <button class="copy-btn" onclick="copyResponse()">
+                    Copiar Resposta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', function() {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileName();
+                }
+            });
+
+            fileInput.addEventListener('change', updateFileName);
+
+            document.getElementById('emailText').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    analyzeEmail();
+                }
+            });
+        });
+
+        function updateFileName() {
+            const fileInput = document.getElementById('fileInput');
+            const fileName = document.getElementById('fileName');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileName.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.style.color = '#2d5af0';
+            } else {
+                fileName.textContent = 'Nenhum arquivo selecionado';
+                fileName.style.color = '#a0a0a0';
+            }
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        async function analyzeEmail() {
+            const btn = document.querySelector('.analyze-btn');
+            const btnText = document.getElementById('btn-text');
+            const resultCard = document.getElementById('result-card');
+
+            try {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loading"></div>Analisando...';
+
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                const mockResults = {
+                    category: "Dúvida Técnica",
+                    response: `Prezado(a) cliente,
+
+Agradecemos pelo seu contato. Nossa equipe técnica analisará sua dúvida e retornará com uma solução dentro de 24 horas úteis.
+
+Para agilizar o atendimento, pedimos que nos forneça:
+- Número do seu contrato
+- Descrição detalhada do problema
+- Screenshots (se aplicável)
+
+Atenciosamente,
+Equipe de Suporte Técnico`
+                };
+
+                document.getElementById('categoryResult').textContent = mockResults.category;
+                document.getElementById('responseSuggestion').textContent = mockResults.response;
+                resultCard.classList.remove('hidden');
+
+                resultCard.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                alert('Erro na análise: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Analisar Email';
+            }
+        }
+
+        function copyResponse() {
+            const responseText = document.getElementById('responseSuggestion').textContent;
+            navigator.clipboard.writeText(responseText).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copiado';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert('Erro ao copiar: ' + err);
+            });
+        }
+    </script>
+</body>
+</html>
