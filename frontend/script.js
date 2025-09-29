@@ -3,18 +3,15 @@ let currentOption = 'text';
 function showOption(option) {
     currentOption = option;
     
-    // Atualizar botões
     document.querySelectorAll('.option').forEach(opt => {
         opt.classList.remove('active');
     });
     event.target.classList.add('active');
     
-    // Mostrar conteúdo correto
     document.getElementById('text-option').classList.toggle('hidden', option !== 'text');
     document.getElementById('file-option').classList.toggle('hidden', option !== 'file');
 }
 
-// Configurar file input
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const fileName = document.getElementById('fileName');
     if (this.files.length > 0) {
@@ -34,7 +31,7 @@ async function classifyEmail() {
         button.disabled = true;
         
         if (currentOption === 'text') {
-            // Modo texto
+
             emailText = document.getElementById('emailText').value.trim();
             if (!emailText) {
                 alert('Por favor, insira o texto do email');
@@ -43,7 +40,6 @@ async function classifyEmail() {
                 return;
             }
         } else {
-            // Modo arquivo
             const fileInput = document.getElementById('fileInput');
             if (!fileInput.files.length) {
                 alert('Por favor, selecione um arquivo');
@@ -59,26 +55,17 @@ async function classifyEmail() {
                 button.disabled = false;
                 return;
             }
+            
+            emailText = `Arquivo: ${file.name}`;
         }
         
-        let response;
-        if (currentOption === 'text') {
-            // Enviar como JSON
-            response = await fetch('http://https://classificador-email-backend.onrender.com/classify:5000/classify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: emailText })
-            });
-        } else {
-            // Enviar como FormData (arquivo)
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            
-            response = await fetch('httphttps://classificador-email-backend.onrender.com/classifylocalhost:5000/classify', {
-                method: 'POST',
-                body: formData
-            });
-        }
+        const response = await fetch('https://classificador-email-ia.onrender.com/classify', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ email: emailText })
+        });
         
         console.log('Status da resposta:', response.status);
         
@@ -95,7 +82,6 @@ async function classifyEmail() {
             document.getElementById('responseSuggestion').textContent = result.response;
             document.getElementById('result').classList.remove('hidden');
             
-            // Rolagem suave para o resultado
             document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
         } else {
             throw new Error(result.error || 'Erro desconhecido do servidor');
@@ -105,7 +91,7 @@ async function classifyEmail() {
         console.error('Erro detalhado:', error);
         
         if (error.message.includes('Failed to fetch')) {
-            alert('Não foi possível conectar ao servidor!\n\nVerifique se:\n• O servidor backend está rodando\n• A URL http://localhost:5000 está acessível');
+            alert('Não foi possível conectar ao servidor!\n\nVerifique se:\n• O servidor backend está rodando\n• A URL está correta');
         } else if (error.message.includes('NetworkError')) {
             alert('Erro de rede! Verifique sua conexão.');
         } else {
@@ -127,10 +113,13 @@ function copyResponse() {
     });
 }
 
-// Função para testar a conexão com o backend
 async function testConnection() {
     try {
-        const response = await fetch('http://localhost:5000/health');
+        const response = await fetch('https://classificador-email-ia.onrender.com/classify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'test' })
+        });
         if (response.ok) {
             const data = await response.json();
             console.log('Backend online:', data);
@@ -145,14 +134,11 @@ async function testConnection() {
     }
 }
 
-// Inicialização quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Página carregada. Iniciando testes...');
     
-    // Mostrar opção de texto por padrão
     showOption('text');
     
-    // Testar conexão com backend
     testConnection().then(online => {
         if (online) {
             console.log('Sistema pronto para uso!');
@@ -161,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Enter key no textarea
     document.getElementById('emailText').addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && e.ctrlKey) {
             classifyEmail();
