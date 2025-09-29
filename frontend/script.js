@@ -107,9 +107,32 @@ async function classifyEmail() {
 function copyResponse() {
     const responseText = document.getElementById('responseSuggestion').textContent;
     navigator.clipboard.writeText(responseText).then(() => {
-        alert('Resposta copiada para a área de transferência!');
+        // Mostrar feedback visual em vez de alerta
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copiado!';
+        btn.style.background = '#2ecc71';
+        
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+        }, 2000);
     }).catch(err => {
-        alert('Erro ao copiar: ' + err);
+        console.error('Erro ao copiar:', err);
+        // Fallback para método antigo
+        const textArea = document.createElement('textarea');
+        textArea.value = responseText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copiado!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
     });
 }
 
