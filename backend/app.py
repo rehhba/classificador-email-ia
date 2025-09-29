@@ -51,7 +51,6 @@ def classify_email():
         if not email_text or not email_text.strip():
             return jsonify({'error': 'Nenhum conteúdo fornecido', 'status': 'error'}), 400
         
-        # USAR APENAS CLASSIFICAÇÃO SIMPLES - MAIS EFETIVA
         category = classify_simple_improved(email_text)
         
         response_suggestion = generate_response_with_hf(email_text, category)
@@ -98,76 +97,59 @@ def classify_simple_improved(email_text):
     
     # PALAVRAS-CHAVE FORTES para IMPORTANTE (com pesos)
     important_keywords = {
-        # Urgência e problemas críticos
         'urgente': 3, 'emergência': 3, 'crítico': 3, 'crítica': 3, 
         'problema grave': 3, 'não funciona': 3, 'sistema down': 3,
         'fora do ar': 3, 'erro crítico': 3, 'parado': 2, 'travado': 2,
         'quebrado': 2, 'defeito': 2, 'falha': 2, 'bug': 2,
         
-        # Impacto financeiro
         'perda de vendas': 3, 'cliente reclamando': 2, 'chargeback': 3,
         'prejuízo': 3, 'perda financeira': 3, 'pagamento': 2,
         'fatura': 2, 'boleto': 2, 'vencimento': 2, 'atrasado': 2,
         
-        # Problemas operacionais
         'suporte': 2, 'ajuda técnica': 2, 'conserto': 2, 'reparo': 2,
         'contrato': 2, 'legal': 2, 'jurídico': 2, 'processo': 2,
         
-        # Reclamações sérias
         'reclamação': 2, 'insatisfeito': 2, 'devolução': 2, 'cancelar': 2,
         'revogar': 2, 'rescisão': 2,
         
-        # Segurança
         'hackeado': 3, 'segurança': 2, 'senha': 2, 'conta': 2,
         'acesso': 2, 'bloqueado': 2,
         
-        # Prazos
         'prazo curto': 2, 'hoje': 2, 'amanhã': 2, 'data limite': 2,
         'imediatamente': 2, 'agora': 2
     }
     
-    # PALAVRAS-CHAVE para NÃO IMPORTANTE
     unimportant_keywords = {
-        # Agradecimentos
         'obrigado': 2, 'obrigada': 2, 'grato': 2, 'gratidão': 2,
         'agradeço': 2, 'valeu': 2, 'parabéns': 2, 'felicitações': 2,
         
-        # Marketing/Newsletter
         'newsletter': 2, 'promoção': 1, 'oferta': 1, 'desconto': 1,
         'marketing': 1, 'divulgação': 1, 'novidade': 1, 'lançamento': 1,
         
-        # Social
         'convite': 1, 'evento': 1, 'festa': 1, 'encontro': 1,
         'social': 1, 'comemoração': 1,
         
-        # Informações gerais
         'curiosidade': 1, 'interessante': 1, 'compartilhar': 1,
         'informação': 1, 'consulta': 1,
         
-        # Follow-up não urgente
         'lembrete suave': 1, 'quando possível': 1, 'sem pressa': 1,
         'sem urgência': 1
     }
     
-    # Calcular pontuação
     important_score = 0
     unimportant_score = 0
     
-    # Verificar palavras importantes
     for keyword, weight in important_keywords.items():
         if keyword in email_lower:
             important_score += weight
     
-    # Verificar palavras não importantes
     for keyword, weight in unimportant_keywords.items():
         if keyword in email_lower:
             unimportant_score += weight
     
-    # Classificar baseado na pontuação
     if important_score > unimportant_score:
         return "Importante"
     elif important_score == 0 and unimportant_score == 0:
-        # Se não encontrou palavras-chave, classificar como importante por padrão
         return "Importante"
     else:
         return "Não Importante"
@@ -190,7 +172,6 @@ def generate_response_with_hf(email_text, category):
             result = response.json()
             if isinstance(result, list) and len(result) > 0:
                 generated_text = result[0]['generated_text']
-                # Extrair apenas a parte da resposta
                 if "Resposta:" in generated_text:
                     return generated_text.split("Resposta:")[-1].strip()
                 return generated_text.strip()
