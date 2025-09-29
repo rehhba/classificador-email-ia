@@ -271,10 +271,10 @@
 
         .copy-btn {
             padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
+            background: #27ae60;
             color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
@@ -282,8 +282,12 @@
         }
 
         .copy-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: #219653;
             transform: translateY(-1px);
+        }
+
+        .copy-btn.copied {
+            background: #2ecc71;
         }
 
         .hidden {
@@ -299,26 +303,6 @@
             border-top-color: #2d5af0;
             animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
-        }
-
-        .error-message {
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin: 10px 0;
-            color: #f8d7da;
-            font-size: 0.9rem;
-        }
-
-        .success-message {
-            background: rgba(40, 167, 69, 0.1);
-            border: 1px solid rgba(40, 167, 69, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin: 10px 0;
-            color: #d4edda;
-            font-size: 0.9rem;
         }
 
         @keyframes spin {
@@ -404,11 +388,10 @@
             <div class="result-section">
                 <h4>Resposta Sugerida</h4>
                 <div class="response-text" id="responseSuggestion"></div>
-                <button class="copy-btn" onclick="copyResponse()">
+                <button class="copy-btn" onclick="copyResponse(this)">
                     Copiar Resposta
                 </button>
             </div>
-
         </div>
     </div>
 
@@ -459,6 +442,8 @@
         }
 
         function showTab(tabId) {
+            const clickedButton = event?.target || document.querySelector(`[onclick*="${tabId}"]`);
+            
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -466,7 +451,9 @@
                 content.classList.remove('active');
             });
 
-            event.target.classList.add('active');
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
             document.getElementById(tabId).classList.add('active');
         }
 
@@ -474,12 +461,10 @@
             const btn = document.querySelector('.analyze-btn');
             const btnText = document.getElementById('btn-text');
             const resultCard = document.getElementById('result-card');
-            const messageDiv = document.getElementById('analysis-message');
 
             try {
                 btn.disabled = true;
-                btnText.innerHTML = '<div class="loading"></div>Conectando com IA...';
-                messageDiv.innerHTML = '';
+                btnText.innerHTML = '<div class="loading"></div>Analisando...';
 
                 const activeTab = document.querySelector('.tab-content.active').id;
                 let emailText = '';
@@ -523,7 +508,6 @@
                     document.getElementById('categoryResult').textContent = result.category;
                     document.getElementById('responseSuggestion').textContent = result.response;
                     resultCard.classList.remove('hidden');
-                    messageDiv.innerHTML = '<div class="success-message">✅ Análise realizada com IA avançada</div>';
                 } else {
                     throw new Error(result.error || 'Erro desconhecido no servidor');
                 }
@@ -532,25 +516,42 @@
 
             } catch (error) {
                 console.error('Erro completo:', error);
-                messageDiv.innerHTML = `<div class="error-message">❌ Erro: ${error.message}</div>`;
-                alert('Erro ao conectar com a IA: ' + error.message);
+                alert('Erro ao processar o email: ' + error.message);
             } finally {
                 btn.disabled = false;
                 btnText.textContent = 'Analisar Email';
             }
         }
 
-        function copyResponse() {
+        function copyResponse(button) {
             const responseText = document.getElementById('responseSuggestion').textContent;
+            
             navigator.clipboard.writeText(responseText).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copiado!';
+                const originalText = button.textContent;
+                button.textContent = '✓ Copiado!';
+                button.classList.add('copied');
+                
                 setTimeout(() => {
-                    btn.textContent = originalText;
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
                 }, 2000);
             }).catch(err => {
-                alert('Erro ao copiar: ' + err);
+                console.error('Erro ao copiar:', err);
+                const textArea = document.createElement('textarea');
+                textArea.value = responseText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const originalText = button.textContent;
+                button.textContent = '✓ Copiado!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
             });
         }
     </script>
