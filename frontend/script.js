@@ -51,12 +51,9 @@ async function analyzeEmail() {
                 return;
             }
             
-            // Para arquivos, vamos usar apenas o nome por enquanto
-            // Em uma versão futura, podemos extrair o texto do PDF
             emailText = `Arquivo: ${file.name}`;
         }
 
-        // 🔥 CONEXÃO DIRETA COM O BACKEND - SEM FALLBACK LOCAL
         const response = await fetch('https://classificador-email-ia.onrender.com/classify', {
             method: 'POST',
             headers: {
