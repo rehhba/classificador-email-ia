@@ -21,93 +21,78 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     }
 });
 
-async function classifyEmail() {
-    let emailText = '';
-    
-    try {
-        const button = document.querySelector('button');
-        const originalText = button.textContent;
-        button.textContent = 'Analisando...';
-        button.disabled = true;
-        
-        if (currentOption === 'text') {
+async function analyzeEmail() {
+    const btn = document.querySelector('.analyze-btn');
+    const btnText = document.getElementById('btn-text');
+    const resultCard = document.getElementById('result-card');
 
+    try {
+        btn.disabled = true;
+        btnText.innerHTML = '<div class="loading"></div>Analisando...';
+
+        const activeTab = document.querySelector('.tab-content.active').id;
+        let emailText = '';
+
+        if (activeTab === 'text-tab') {
             emailText = document.getElementById('emailText').value.trim();
             if (!emailText) {
                 alert('Por favor, insira o texto do email');
-                button.textContent = originalText;
-                button.disabled = false;
                 return;
             }
         } else {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput.files.length) {
                 alert('Por favor, selecione um arquivo');
-                button.textContent = originalText;
-                button.disabled = false;
                 return;
             }
-            
             const file = fileInput.files[0];
-            if (!file.name.match(/\.(txt|pdf)$/i)) {
-                alert('Por favor, selecione um arquivo .txt ou .pdf');
-                button.textContent = originalText;
-                button.disabled = false;
+            if (!file.name.match(/\.(txt|pdf|doc|docx)$/i)) {
+                alert('Por favor, selecione um arquivo .txt, .pdf, .doc ou .docx');
                 return;
             }
             
+            // Para arquivos, vamos usar apenas o nome por enquanto
+            // Em uma versão futura, podemos extrair o texto do PDF
             emailText = `Arquivo: ${file.name}`;
         }
-        
+
+        // 🔥 CONEXÃO DIRETA COM O BACKEND - SEM FALLBACK LOCAL
         const response = await fetch('https://classificador-email-ia.onrender.com/classify', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
+            headers: {
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({ email: emailText })
         });
-        
-        console.log('Status da resposta:', response.status);
-        
+
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro ${response.status}: ${errorText}`);
+            throw new Error(`Erro ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        console.log('Resultado:', result);
-        
+
         if (result.status === 'success') {
             document.getElementById('categoryResult').textContent = result.category;
             document.getElementById('responseSuggestion').textContent = result.response;
-            document.getElementById('result').classList.remove('hidden');
-            
-            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+            resultCard.classList.remove('hidden');
         } else {
-            throw new Error(result.error || 'Erro desconhecido do servidor');
+            throw new Error(result.error || 'Erro desconhecido no servidor');
         }
-        
+
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+
     } catch (error) {
-        console.error('Erro detalhado:', error);
-        
-        if (error.message.includes('Failed to fetch')) {
-            alert('Não foi possível conectar ao servidor!\n\nVerifique se:\n• O servidor backend está rodando\n• A URL está correta');
-        } else if (error.message.includes('NetworkError')) {
-            alert('Erro de rede! Verifique sua conexão.');
-        } else {
-            alert('Erro: ' + error.message);
-        }
+        console.error('Erro completo:', error);
+        alert('Erro ao conectar com a IA: ' + error.message);
     } finally {
-        const button = document.querySelector('button');
-        button.textContent = 'Classificar Email';
-        button.disabled = false;
+        btn.disabled = false;
+        btnText.textContent = 'Analisar Email';
     }
 }
 
 function copyResponse() {
     const responseText = document.getElementById('responseSuggestion').textContent;
     navigator.clipboard.writeText(responseText).then(() => {
-        // Mostrar feedback visual em vez de alerta
         const btn = document.querySelector('.copy-btn');
         const originalText = btn.textContent;
         btn.textContent = '✓ Copiado!';
@@ -119,7 +104,6 @@ function copyResponse() {
         }, 2000);
     }).catch(err => {
         console.error('Erro ao copiar:', err);
-        // Fallback para método antigo
         const textArea = document.createElement('textarea');
         textArea.value = responseText;
         document.body.appendChild(textArea);
